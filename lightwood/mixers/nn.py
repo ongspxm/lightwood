@@ -2,6 +2,7 @@ import copy
 import random
 import time
 
+import os
 import torch
 from torch.utils.data import DataLoader
 import numpy as np
@@ -541,7 +542,7 @@ class NnMixer(BaseMixer):
         ds.transformer = self.transformer
 
         if self._nonpersistent['sampler'] is None:
-            data_loader = DataLoader(ds, batch_size=self.batch_size, sampler=self._nonpersistent['sampler'], num_workers=0)
+            data_loader = DataLoader(ds, batch_size=self.batch_size, sampler=self._nonpersistent['sampler'], num_workers=0)  # os.cpu_count()
         else:
             data_loader = DataLoader(ds, batch_size=self.batch_size, shuffle=True, num_workers=0)
 

@@ -1,3 +1,4 @@
+import os
 import random
 import numpy as np
 import torch
@@ -75,7 +76,10 @@ class CategoricalAutoEncoder(BaseEncoder):
             batch_size = min(200, int(len(priming_data) / 50))
 
             priming_data_str = [str(x) for x in priming_data]
-            train_data_loader = DataLoader(list(zip(priming_data_str,priming_data_str)), batch_size=batch_size, shuffle=True)
+            train_data_loader = DataLoader(list(zip(priming_data_str,priming_data_str)),
+                                           batch_size=batch_size,
+                                           num_workers=0,  # os.cpu_count()
+                                           shuffle=True)
 
             test_data_loader = None
 

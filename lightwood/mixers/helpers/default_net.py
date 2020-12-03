@@ -33,7 +33,12 @@ class DefaultNet(torch.nn.Module):
         super(DefaultNet, self).__init__()
 
         if shape is None and pretrained_net is None:
-            shape = [self.input_size, max([self.input_size*2,self.output_size*2,400]), self.output_size]
+            base_size = max([self.input_size * 2, self.output_size * 2, 768])
+            shape = [self.input_size,
+                     base_size*3,
+                     base_size*2,
+                     base_size,
+                     self.output_size]
 
         if pretrained_net is None:
             log.info(f'Building network of shape: {shape}')

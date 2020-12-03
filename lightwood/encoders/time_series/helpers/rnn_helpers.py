@@ -69,11 +69,15 @@ class EncoderRNNNumerical(nn.Module):
         self.hidden_size = hidden_size
         self.dropout = nn.Dropout(0.2)
         self.gru = nn.GRU(input_size, hidden_size, batch_first=True)
-        self.out = nn.Linear(hidden_size, input_size)
+        self.hidden1 = nn.Linear(hidden_size, hidden_size//2)
+        self.hidden2 = nn.Linear(hidden_size//2, hidden_size//4)
+        self.hidden3 = nn.Linear(hidden_size//4, hidden_size//8)
+        self.out = nn.Linear(hidden_size//8, input_size)
 
     def forward(self, input, hidden):
         output, hidden = self.gru(input, hidden)
         output = self.dropout(output)
+        output = self.hidden3(self.hidden2(self.hidden1(output)))
         output = self.out(output)
         return output, hidden
 
