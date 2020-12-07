@@ -231,7 +231,7 @@ class Predictor:
             try:
                 print('\n\n\nNULLING OUT FWD NET\n\n\n')
                 self._mixer.net._foward_net = None
-                print('\n\n\NULLED OUT FWD NET\n\n\n')
+                print('\n\n\nNULLED OUT FWD NET\n\n\n')
             except Exception as e:
                 pass
             torch.save(self.__dict__, f)
