@@ -228,5 +228,11 @@ class Predictor:
 
             # Dump everything relevant to cpu before saving
             self.convert_to_device("cpu")
+            try:
+                print('\n\n\nNULLING OUT FWD NET\n\n\n')
+                self._mixer.net._foward_net = None
+                print('\n\n\NULLED OUT FWD NET\n\n\n')
+            except Exception as e:
+                pass
             torch.save(self.__dict__, f)
             self.convert_to_device()
