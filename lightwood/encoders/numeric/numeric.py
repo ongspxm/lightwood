@@ -12,7 +12,9 @@ class NumericEncoder(BaseEncoder):
     def __init__(self, data_type=None, is_target=False):
         super().__init__(is_target)
         self._type = data_type
-        self._abs_mean = None
+        self._original_abs_mean = None
+        self._abs_mean = None  # dynamically changes according to recently seen data
+        self._mean_gamma = 0.01  # 9999
         self.positive_domain = False
         self.decode_log = False
 
@@ -36,8 +38,9 @@ class NumericEncoder(BaseEncoder):
                 value_type = 'float'
 
         self._type = value_type if self._type is None else self._type
-        non_null_priming_data = [float(str(x).replace(',','.')) for x in priming_data if x is not None]
-        self._abs_mean = np.mean(np.abs(non_null_priming_data))
+        non_null_priming_data = [float(str(x).replace(',', '.')) for x in priming_data if x is not None]
+        self._original_abs_mean = np.mean(np.abs(non_null_priming_data))
+        self._abs_mean = self._original_abs_mean
         self._prepared = True
 
     def encode(self, data):
@@ -45,6 +48,10 @@ class NumericEncoder(BaseEncoder):
             raise Exception('You need to call "prepare" before calling "encode" or "decode".')
 
         ret = []
+        non_null_data = [float(str(x).replace(',', '.')) for x in data if x is not None]
+        data_mean = np.mean(np.abs(non_null_data))
+        data_mean = data_mean if not np.isnan(data_mean) else self._original_abs_mean
+        self._abs_mean = self._abs_mean*self._mean_gamma+data_mean*(1-self._mean_gamma)
         for real in data:
             try:
                 real = float(real)
@@ -95,14 +102,14 @@ class NumericEncoder(BaseEncoder):
             if self.is_target:
                 if np.isnan(vector[0]) or vector[0] == float('inf') or np.isnan(vector[1]) or vector[1] == float('inf') or np.isnan(vector[2]) or vector[2] == float('inf'):
                     log.error(f'Got weird target value to decode: {vector}')
-                    real_value = pow(10,63)
+                    real_value = pow(10, 63)
                 else:
                     if decode_log:
                         sign = -1 if vector[0] > 0.5 else 1
                         try:
                             real_value = math.exp(vector[1]) * sign
                         except OverflowError as e:
-                            real_value = pow(10,63) * sign
+                            real_value = pow(10, 63) * sign
                     else:
                         real_value = vector[2] * self._abs_mean
 
