@@ -13,9 +13,10 @@ class NumericEncoder(BaseEncoder):
         super().__init__(is_target)
         self._type = data_type
         self._original_abs_mean = None
-        self._abs_mean = None  # dynamically changes according to recently seen data
-        self._mean_gamma = 0.01  # 9999
+        self._abs_mean = None  # dynamically changes according to recently seen data for temporal targets
+        self._mean_gamma = 0.5
         self.positive_domain = False
+        self.temporal_target = False  # TODO: pending its use from outside only for TSS tasks
         self.decode_log = False
 
     def prepare(self, priming_data):
