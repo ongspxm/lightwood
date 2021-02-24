@@ -25,7 +25,7 @@ TODO:
 """
 import re
 import spacy
-from spacy.lang.en.stop_words import STOP_WORDS
+#from spacy.lang.en.stop_words import STOP_WORDS
 
 import sys
 
@@ -117,4 +117,4 @@ class Tokenizer():
         Returns tokenized list of strings
 
         """
-        return [token.lemma_.text for token in nlp(phrase)]
+        return [token.lemma_ for token in nlp(phrase)]
