@@ -25,3 +25,9 @@ try:
     from lightwood.mixers.sklearn_mixer import SklearnMixer
 except Exception as e:
     SklearnMixer = None
+
+try:
+    from lightwood.mixers.avg import AvgEnsemble
+except Exception as e:
+    print(e)
+    AvgEnsemble = None
