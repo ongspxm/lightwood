@@ -31,7 +31,7 @@ class AvgEnsemble(BaseMixer):
 
         if len(mixers) > 1:
             for col in all_preds.keys():
-                output[col]['predictions'] = np.mean([p['predictions'] for p in all_preds['Sunspots']], axis=0).tolist()
+                output[col]['predictions'] = np.mean([p['predictions'] for p in all_preds[col]], axis=0).tolist()
         else:
             output = all_preds
         return output
