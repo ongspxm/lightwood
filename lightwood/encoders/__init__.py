@@ -15,6 +15,7 @@ from lightwood.encoders.time_series.plain import TimeSeriesPlainEncoder
 # from lightwood.encoders.audio.amplitude_ts import AmplitudeTsEncoder
 from lightwood.encoders.categorical.multihot import MultiHotEncoder
 from lightwood.encoders.text.pretrained import PretrainedLang
+from lightwood.encoders.text.gensim import GensimText
 
 
 class DateTime:
@@ -37,6 +38,7 @@ class Text:
     TextRnnEncoder = TextRnnEncoder
     VocabularyEncoder = VocabularyEncoder
     PretrainedLang = PretrainedLang
+    GensimText = GensimText
 
 class Categorical:
     OneHotEncoder = OneHotEncoder
