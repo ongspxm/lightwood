@@ -15,7 +15,7 @@ from lightwood.encoders.time_series.plain import TimeSeriesPlainEncoder
 # from lightwood.encoders.audio.amplitude_ts import AmplitudeTsEncoder
 from lightwood.encoders.categorical.multihot import MultiHotEncoder
 from lightwood.encoders.text.pretrained import PretrainedLang
-from lightwood.encoders.text.gensim import GensimText
+from lightwood.encoders.text.gensimenc import GensimText
 
 
 class DateTime:
