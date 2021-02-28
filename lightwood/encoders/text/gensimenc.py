@@ -107,10 +107,6 @@ class GensimText(BaseEncoder):
 
         priming_data (list) list of str data
         """
-
-        if self._prepared:
-            raise Exception('You can only call "prepare" once for a given encoder.')
-
         if self._tokenizer is None:
             self._tokenizer = Tokenizer()
 
@@ -123,16 +119,6 @@ class GensimText(BaseEncoder):
         self._model.train(sentences=tokens,
                           epochs=self._epochs,
                           total_examples=self._corpus_count)
-
-        self._prepared = True
-
-    def train_more(self, tokens, epochs):
-        """
-        Trains the model a few more epochs
-
-        toksn (list of lists of str) is the output of self._tokenizer.encode()
-        epochs - number of training epochs
-        """
 
     def encode(self, column_data):
         """
