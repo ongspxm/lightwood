@@ -1,4 +1,8 @@
 """
+2021.02.25
+TODO: Handle out-of-vocab
+Google binned values?
+
 2021.02.23
 
 natasha@mindsdb.com
@@ -72,6 +76,19 @@ class Tokenizer():
         text = self.lemmatize(text, self.nlp)
 
         return text
+
+    #def encode(self, sents):
+    #    """
+    #    Wrapper around 'encode1'. 
+#
+    #    sents - list of strs
+    #    """
+    #    output = []
+    #    for sent in sents:
+    #        output.append(self.encode1(sent))
+#
+    #    return output
+
 
     @staticmethod
     def strip_character(phrase):
