@@ -165,7 +165,7 @@ class GensimText(BaseEncoder):
             output = self._sent_embedder(output)
             outputs.append(output)
 
-        return np.vstack(outputs)
+        return torch.Tensor(np.vstack(outputs))
 
     def embed(self, phrase, V):
         """
