@@ -15,12 +15,13 @@ Weird note - gen sim changed vector_size to 'size'
 """
 
 import torch
+import numpy as np
 from lightwood.helpers.device import get_devices
 from lightwood.encoders.encoder_base import BaseEncoder
 from lightwood.logger import log
 from tokenizer import Tokenizer
 
-from text_helpers import mean_norm, last_state
+#from text_helpers import mean_norm, last_state #TODO
 
 from gensim.models import (
     Word2Vec,
@@ -84,7 +85,7 @@ class GensimText(BaseEncoder):
 
         # Type of sentence embedding
         if sent_embedder is not None:
-            self._sent_embedder = mean_norm
+            self._sent_embedder = self._mean_norm
         else:
             self._sent_embedder = sent_embedder
 
@@ -107,6 +108,8 @@ class GensimText(BaseEncoder):
 
         priming_data (list) list of str data
         """
+        if self._prepared:
+            raise Exception("You can only prepare the encoder once. For more training use train()")
         if self._tokenizer is None:
             self._tokenizer = Tokenizer()
 
@@ -120,21 +123,73 @@ class GensimText(BaseEncoder):
                           epochs=self._epochs,
                           total_examples=self._corpus_count)
 
+        self._prepared = True
+        self._trained_epochs = self._epochs
+
+
+    def train(self, tokens, Nepochs, checktokens=True):
+        """
+        Train gensim model for Nepochs with the tokens input.
+        If a token is NOT in the vocabulary, then.
+
+        tokens (list of lists of str);
+        Nepochs (int); number of epochs to train
+        checktokens (Bool); Check for unknown tokens
+        """
+        if self._prepared is None:
+            raise Exception("You need to call the prepare command first")
+
+        self._trained_epochs += self._epochs
+
+        self._model.train(sentences=tokens,
+                          epochs=Nepochs,
+                          total_examples=len(tokens))
+
+
     def encode(self, column_data):
         """
-        Encode a sentence
+        Encode a sentence or sentence in column data.
+        Given each sentence can have variable tokens.
+
+        Column_data (list) list of col data from text. Will tokenize
+
+        Returns np.array of size Nsents x Nembed
         """
+        V = set(self._model.wv.vocab.keys())
         outputs = []
         for text in column_data:
             if text is None:
-                txt = ''
+                text = ''
 
-            token = self._tokenizer.encode(txt)
-            outputs.append(self._model(token))
+            output = self.embed(text)
+            output = self._sent_embedder(output)
+            outputs.append(output)
 
-        return outputs
+        return np.vstack(outputs)
 
+    def embed(self, phrase, V):
+        """
+        Given a phrase, tokenizes and yields a model value
+
+        phrase - (str) a single text instance
+        V - (set) set of vocabulary words
+        """
+        token = self._tokenizer.encode(phrase)
+
+        # Return word vectors for each token; outputs Nembed x Ntokens
+        output = np.vstack([self._model.wv[word] for word in token if word in V])
+        return output
 
     def decode(self, encoded_values_tensor, max_length=100):
         raise Exception("Decoder not implemented yet.")
 
+    @staticmethod
+    def _mean_norm(xinp, dim=1):
+        """
+        Calculates a 1 x N_embed vector by averaging all token embeddings
+
+        Args:
+        xinp ::np array; Assumes order Nembedding x Ntokens
+        dim ::int; dimension to average on
+        """
+        return np.mean(xinp, axis=dim)
