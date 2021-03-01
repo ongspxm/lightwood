@@ -19,7 +19,7 @@ import numpy as np
 from lightwood.helpers.device import get_devices
 from lightwood.encoders.encoder_base import BaseEncoder
 from lightwood.logger import log
-from tokenizer import Tokenizer
+from lightwood.helpers.tokenizer import Tokenizer
 
 #from text_helpers import mean_norm, last_state #TODO
 
