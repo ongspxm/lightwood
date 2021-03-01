@@ -161,7 +161,7 @@ class GensimText(BaseEncoder):
             if text is None:
                 text = ''
 
-            output = self.embed(text)
+            output = self.embed(text, V)
             output = self._sent_embedder(output)
             outputs.append(output)
 
