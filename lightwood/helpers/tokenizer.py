@@ -21,7 +21,7 @@ Steps:
 TODO:
 - Misspellings
 - Make my own num2word; not great to have package dependency
-- look into part of speech tagging
+- using .lemma() trip the plurals into singular (check NNS->NN)
 - strip_character extra white space nonsense; just double check
 
 # Lemmatizing may be slow
