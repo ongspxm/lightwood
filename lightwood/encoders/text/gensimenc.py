@@ -84,7 +84,7 @@ class GensimText(BaseEncoder):
             #self.model_type = model_type
 
         # Type of sentence embedding
-        if sent_embedder is not None:
+        if sent_embedder is None:
             self._sent_embedder = self._mean_norm
         else:
             self._sent_embedder = sent_embedder
