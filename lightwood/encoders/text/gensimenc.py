@@ -55,12 +55,12 @@ class GensimText(BaseEncoder):
                  tokenizer=None,
                  sent_embedder=None,
                  seed=1234,
-                 epochs=5
+                 epochs=100,
                  ):
         super().__init__(is_target)
 
         self.name = model_type + " text encoder"
-        
+
         self._epochs = epochs
 
         self._embed_dim = embed_dim
@@ -69,14 +69,14 @@ class GensimText(BaseEncoder):
 
         if model_type == "fasttext":
             self._model = FastText(size=self._embed_dim,
-                                   window=self._window ,
+                                   window=self._window,
                                    min_count=self._min_count,
                                    seed=seed,
                                    iter=self._epochs)
             #self.model_type = model_type
         else:
             self._model = Word2Vec(size=self._embed_dim,
-                                   window=self._window ,
+                                   window=self._window,
                                    min_count=self._min_count,
                                    workers=workers,
                                    seed=seed,
@@ -110,6 +110,7 @@ class GensimText(BaseEncoder):
         """
         if self._prepared:
             raise Exception("You can only prepare the encoder once. For more training use train()")
+
         if self._tokenizer is None:
             self._tokenizer = Tokenizer()
 
@@ -125,7 +126,6 @@ class GensimText(BaseEncoder):
 
         self._prepared = True
         self._trained_epochs = self._epochs
-
 
     def train(self, tokens, Nepochs, checktokens=True):
         """
@@ -144,7 +144,6 @@ class GensimText(BaseEncoder):
         self._model.train(sentences=tokens,
                           epochs=Nepochs,
                           total_examples=len(tokens))
-
 
     def encode(self, column_data):
         """
@@ -173,11 +172,13 @@ class GensimText(BaseEncoder):
 
         phrase - (str) a single text instance
         V - (set) set of vocabulary words
+
+        Returns averaged vector; 1 x Nembed
         """
         token = self._tokenizer.encode(phrase)
 
         # Return word vectors for each token; outputs Nembed x Ntokens
-        output = np.vstack([self._model.wv[word] for word in token if word in V])
+        output = np.vstack([self._model.wv[word] for word in token if word in V]).T
         return output
 
     def decode(self, encoded_values_tensor, max_length=100):
