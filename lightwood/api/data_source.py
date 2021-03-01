@@ -26,6 +26,7 @@ from lightwood.encoders import (
     ShortTextEncoder,
     VocabularyEncoder,
     PretrainedLang,
+    GensimText,
 )
 
 
@@ -298,8 +299,9 @@ class DataSource(Dataset):
             ColumnDataTypes.MULTIPLE_CATEGORICAL: MultiHotEncoder,
             ColumnDataTypes.DATETIME: DatetimeEncoder,
             ColumnDataTypes.IMAGE: Img2VecEncoder,
-            ColumnDataTypes.TEXT: DistilBertEncoder,
+            #ColumnDataTypes.TEXT: DistilBertEncoder,
             #ColumnDataTypes.TEXT: PretrainedLang,
+            ColumnDataTypes.TEXT: GensimText,
             ColumnDataTypes.SHORT_TEXT: ShortTextEncoder,
             ColumnDataTypes.TIME_SERIES: TsRnnEncoder,
             # ColumnDataTypes.AUDIO: AmplitudeTsEncoder
