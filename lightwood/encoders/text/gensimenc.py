@@ -94,11 +94,12 @@ class GensimText(BaseEncoder):
         #self.device, _ = get_devices() # Probably not useful as no torch training.
 
     def to(self, device, available_devices):
+        ## TODO: This is removed since ._model is not pytorch
         """ Set torch device to CPU/CUDA """
-        self._model = self._model.to(self.device)
+        #self._model = self._model.to(self.device)
 
-        if self._head is not None:
-            self._head = self._head.to(self.device)
+        #if self._head is not None:
+        #    self._head = self._head.to(self.device)
 
         return self
 
