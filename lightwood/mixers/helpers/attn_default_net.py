@@ -52,10 +52,10 @@ class AttnDefaultNet(torch.nn.Module):
             for ind in range(len(shape) - 1):
                 if (dropout is not None) and (0 < ind < len(shape)):
                     layers.append(torch.nn.Dropout(p=dropout))
-                if ind < len(shape) - 2:
-                    layers.append(LinAttnBlock(shape[ind], shape[ind+1]))
+                if ind >= len(shape) - 2:
+                    layers.append(torch.nn.Linear(shape[ind], shape[ind+1]))
                 else:
-                    layers.append(LinAttnBlock(shape[ind], shape[ind+1], activation=False))
+                    layers.append(LinAttnBlock(shape[ind], shape[ind+1]))
 
             self.net = torch.nn.Sequential(*layers)
 
