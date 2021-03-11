@@ -14,7 +14,8 @@ from lightwood.mixers import BaseMixer
 from lightwood.config.config import CONFIG
 from lightwood.helpers.torch import LightwoodAutocast
 from lightwood.constants.lightwood import COLUMN_DATA_TYPES
-from lightwood.mixers.helpers.default_net import DefaultNet
+# from lightwood.mixers.helpers.default_net import DefaultNet
+from lightwood.mixers.helpers.attn_default_net import AttnDefaultNet as DefaultNet
 from lightwood.mixers.helpers.selfaware import SelfAware
 from lightwood.mixers.helpers.ranger import Ranger
 from lightwood.mixers.helpers.transform_corss_entropy_loss import TransformCrossEntropyLoss
@@ -356,7 +357,6 @@ class NnMixer(BaseMixer):
                             log.info('Finished fitting on {subset_id} of {no_subsets} subset'.format(subset_id=subset_id, no_subsets=len(train_ds.subsets.keys())))
 
                             self._update_model(best_model)
-
 
                             if subset_id == subset_id_arr[-1]:
                                 stop_training = True
