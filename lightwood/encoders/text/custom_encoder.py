@@ -156,10 +156,9 @@ class MLMEncoder(BaseEncoder):
         )
         text["score"] = labels
 
-        xinp = MaskedText(text, self._tokenizer.mask_token_id, self._labeldict)
         # Construct a dataset class and data loader
         traindata = DataLoader(
-            xinp,
+            MaskedText(text, self._tokenizer.mask_token_id, self._labeldict),
             batch_size=self._batch_size,
             shuffle=True,
         )
@@ -175,16 +174,15 @@ class MLMEncoder(BaseEncoder):
             num_training_steps=len(traindata) * self._epochs,
         )
 
-        ## --------------------------
-        ## Train the model
-        ## -------------------------
+        # --------------------------
+        # Train the model
+        # -------------------------
         self._train_model(
             traindata, optim=optimizer, scheduler=scheduler, n_epochs=self._epochs
         )
 
         log.info("Text encoder is prepared!")
         self._prepared = True
-
 
     def encode(self, column_data):
         """
@@ -198,15 +196,14 @@ class MLMEncoder(BaseEncoder):
 
         encoded_representation = []
 
+        # Prepare the priming data with a "MASK"
+
+        column_data = add_mask(column_data, self._tokenizer._mask_token)
         # Set model to testing/eval mode.
         self._model.eval()
 
         with torch.no_grad():
             for text in column_data:
-
-                # Omit NaNs
-                if text is None:
-                    text = ""
 
                 # Tokenize the text with the built-in tokenizer.
                 inp = self._tokenizer.encode(
@@ -229,21 +226,24 @@ class MLMEncoder(BaseEncoder):
         """
         Get the [CLS] token representation after predicting
         the model outcome.
+
+        This currently enables the BEST predicted token to be
+        the [MASK] replacement; a better strategy is to reweigh only
+        the labels predicted.
         """
         mask_index = torch.where(inp[0] == self._tokenizer.mask_token_id)
-
 
         logits = self._model(inp).logits
         softmax = F.softmax(logits, dim=-1)
         mask_word = softmax[0, mask_index, :]
 
-        pred_word = torch.topk(mask_word, 2, dim=1)[1][0]
+        pred_word = torch.topk(mask_word, 1, dim=1)[1][0]
 
+        # Replace the MASK with the predicted token
         output = dc(inp)
         output[0][mask_index] = pred_word
 
-        return self._model(output)
-
+        return self._model.base_model(output).last_hidden_state[:, 0].detach()
 
     def _train_model(
         self,
