@@ -80,7 +80,7 @@ class MLMEncoder(BaseEncoder):
         super().__init__(is_target)
 
         self.model_name = "distilbert-base-uncased"
-        self.name = self.model_name + " text encoder"
+        self.name = self.model_name + " MLM text encoder"
         log.info(self.name)
 
         self._max_len = max_position_embeddings
@@ -181,7 +181,7 @@ class MLMEncoder(BaseEncoder):
             traindata, optim=optimizer, scheduler=scheduler, n_epochs=self._epochs
         )
 
-        log.info("Text encoder is prepared!")
+        log.info("MLM text encoder is prepared!")
         self._prepared = True
 
     def encode(self, column_data):
