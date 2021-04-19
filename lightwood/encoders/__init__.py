@@ -13,6 +13,7 @@ from lightwood.encoders.time_series.rnn import TimeSeriesEncoder as TsRnnEncoder
 from lightwood.encoders.time_series.plain import TimeSeriesPlainEncoder
 from lightwood.encoders.categorical.multihot import MultiHotEncoder
 from lightwood.encoders.text.pretrained import PretrainedLang
+from lightwood.encoders.text.custom_encoder import MLMEncoder
 
 
 class DateTime:
@@ -34,6 +35,7 @@ class Text:
     TextRnnEncoder = TextRnnEncoder
     VocabularyEncoder = VocabularyEncoder
     PretrainedLang = PretrainedLang
+    MLMEncoder = MLMEncoder
 
 class Categorical:
     OneHotEncoder = OneHotEncoder
