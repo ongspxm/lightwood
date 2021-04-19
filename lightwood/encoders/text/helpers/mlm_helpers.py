@@ -8,7 +8,7 @@ Author: Natasha Seelam (natasha@mindsdb.com)
 import torch
 from typing import List, Dict
 from transformers.tokenization_utils_base import BatchEncoding
-from transformers import DistilBertTokenizerFast
+from transformers import DistilBertTokenizerFast, DistilBertForMaskedLM
 
 
 def add_mask(priming_data: List[str], mask: str = "[MASK]"):
@@ -24,7 +24,9 @@ def add_mask(priming_data: List[str], mask: str = "[MASK]"):
     return text
 
 
-def create_label_tokens(n_labels: int, tokenizer, model):
+def create_label_tokens(
+    n_labels: int, tokenizer: DistilBertTokenizerFast, model: DistilBertForMaskedLM
+):
     """
     Given a list of unique values,
     creates a mapping for each label.
@@ -34,7 +36,7 @@ def create_label_tokens(n_labels: int, tokenizer, model):
     User provides the number of unique labels.
 
     Args:
-    ::param n_labels; number of labels 
+    ::param n_labels; number of labels
     ::param tokenizer; text tokenizer
     """
     labels = {"[C" + str(i) + "]": i for i in range(n_labels)}
@@ -46,9 +48,11 @@ def create_label_tokens(n_labels: int, tokenizer, model):
     # Resize for the new tokens
     model.resize_token_embeddings(len(tokenizer))
 
-    return {
-        val: tokenizer.convert_tokens_to_ids(key) for key, val in labels.items()
-    },tokenizer, model
+    return (
+        {val: tokenizer.convert_tokens_to_ids(key) for key, val in labels.items()},
+        tokenizer,
+        model,
+    )
 
 
 class MaskedText(torch.utils.data.Dataset):
