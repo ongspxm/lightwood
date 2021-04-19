@@ -23,7 +23,11 @@ Author: Natasha Seelam (natasha@mindsdb.com)
 
 # Dataset helpers
 from torch.utils.data import DataLoader
-from mlm_helpers import MaskedText, add_mask, create_label_tokens
+from lightwood.encoders.text.helpers.mlm_helpers import (
+    MaskedText,
+    add_mask,
+    create_label_tokens,
+)
 
 # lightwood helpers
 from lightwood.constants.lightwood import COLUMN_DATA_TYPES
@@ -90,7 +94,6 @@ class MLMEncoder(BaseEncoder):
         # Set the device; CUDA v. CPU
         self.device, _ = get_devices()
 
-
     def prepare(self, priming_data: List[str], training_data: Dict):
         """
         Prepare the encoder by training on the target.
@@ -139,23 +142,19 @@ class MLMEncoder(BaseEncoder):
 
         N_classes = len(set(training_data["targets"][0]["unencoded_output"]))
         self._labeldict, self._tokenizer = create_label_tokens(
-            N_classes,
-            self._tokenizer
+            N_classes, self._tokenizer
         )
 
         # Tokenize the dataset
         text = self._tokenizer(
-            priming_data,
-            truncation=True,
-            padding=True,
-            add_special_tokens=True
+            priming_data, truncation=True, padding=True, add_special_tokens=True
         )
 
         # Construct a dataset class and data loader
         traindata = DataLoader(
             MaskedText(text, self._tokenizer.mask_token_id, self._labeldict),
             batch_size=self._batch_size,
-            shuffle=True
+            shuffle=True,
         )
 
         # --------------------------
@@ -173,20 +172,14 @@ class MLMEncoder(BaseEncoder):
         # Train the model
         # -------------------------
         self._train_model(
-            traindata,
-            optim=optimizer,
-            scheduler=scheduler,
-            n_epochs=self._epochs
+            traindata, optim=optimizer, scheduler=scheduler, n_epochs=self._epochs
         )
 
         log.info("Text encoder is prepared!")
         self._prepared = True
 
-
-
     def decode(self, encoded_values_tensor, max_length=100):
         raise Exception("Decoder not implemented.")
-
 
     def _train_model(
         self,
