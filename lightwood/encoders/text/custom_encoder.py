@@ -127,8 +127,8 @@ class MLMEncoder(BaseEncoder):
         self._tokenizer = self._tokenizer_class.from_pretrained(self.model_name)
 
         # Trains to a single target
-        if training_data["targets"][0]["output_type"] == COLUMN_DATA_TYPES.CATEGORICAL:
-            print("CATEGORICAL")
+        #if training_data["targets"][0]["output_type"] == COLUMN_DATA_TYPES.CATEGORICAL:
+        #    print("CATEGORICAL")
 
         # --------------------------
         # Prepare the input data
