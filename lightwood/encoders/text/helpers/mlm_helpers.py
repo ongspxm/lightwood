@@ -24,7 +24,7 @@ def add_mask(priming_data: List[str], mask: str = "[MASK]"):
     return text
 
 
-def create_label_tokens(n_labels: int, tokenizer):
+def create_label_tokens(n_labels: int, tokenizer, model):
     """
     Given a list of unique values,
     creates a mapping for each label.
@@ -37,14 +37,18 @@ def create_label_tokens(n_labels: int, tokenizer):
     ::param n_labels; number of labels 
     ::param tokenizer; text tokenizer
     """
-    labeldict = {"[C" + str(i) + "]" for i in range(n_labels)}
+    labels = {"[C" + str(i) + "]": i for i in range(n_labels)}
 
     num_added_toks = tokenizer.add_special_tokens(
-        {"additional_special_tokens": list(labeldict.keys())}
+        {"additional_special_tokens": list(labels.keys())}
     )
+
+    # Resize for the new tokens
+    model.resize_token_embeddings(len(tokenizer))
+
     return {
-        val: tokenizer.convert_tokens_to_ids(key) for key, val in labeldict.items()
-    }, tokenizer
+        val: tokenizer.convert_tokens_to_ids(key) for key, val in labels.items()
+    },tokenizer, model
 
 
 class MaskedText(torch.utils.data.Dataset):
@@ -64,6 +68,9 @@ class MaskedText(torch.utils.data.Dataset):
         """
         Initialization of the language model.
 
+        Your encodings expect to have "input_ids" and "attention_mask" generated
+        by the tokenizer. You must also add the ground-truth labels as "score"
+
         Args:
 
         ::param encodings; batch encoded tokenized outputs; padded + truncated
@@ -82,6 +89,10 @@ class MaskedText(torch.utils.data.Dataset):
         maskloc = torch.where(item["input_ids"] == self._maskid)[0].item()
         labels[maskloc] = self._labeldict[item["score"].item()]
         item["labels"] = labels
+
+        # Create a decoded example
+        item["decode_ids"] = item["input_ids"]
+        item["decode_ids"][maskloc] = item["labels"][maskloc]
 
         return item
 
