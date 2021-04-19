@@ -25,6 +25,7 @@ from lightwood.encoders import (
     ShortTextEncoder,
     VocabularyEncoder,
     PretrainedLang,
+    MLMEncoder,
 )
 
 
@@ -300,7 +301,8 @@ class DataSource(Dataset):
             ColumnDataTypes.MULTIPLE_CATEGORICAL: MultiHotEncoder,
             ColumnDataTypes.DATETIME: DatetimeEncoder,
             ColumnDataTypes.IMAGE: Img2VecEncoder,
-            ColumnDataTypes.TEXT: PretrainedLang,
+            ColumnDataTypes.TEXT: MLMEncoder,
+            #ColumnDataTypes.TEXT: PretrainedLang,
             ColumnDataTypes.SHORT_TEXT: ShortTextEncoder,
             ColumnDataTypes.TIME_SERIES: TsRnnEncoder,
         }
