@@ -39,7 +39,7 @@ def create_label_tokens(
     ::param n_labels; number of labels
     ::param tokenizer; text tokenizer
     """
-    labels = {"[C" + str(i) + "]": i for i in range(n_labels)}
+    labels = {"[C" + str(i) + "]": i for i in range(1, n_labels+1)}
 
     num_added_toks = tokenizer.add_special_tokens(
         {"additional_special_tokens": list(labels.keys())}
