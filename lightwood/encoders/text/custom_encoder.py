@@ -29,7 +29,10 @@ from lightwood.encoders.text.helpers.mlm_helpers import (
     create_label_tokens,
 )
 
-# lightwood helpers
+# ML helpers
+import torch
+from torch.nn import functional as F
+
 from lightwood.constants.lightwood import COLUMN_DATA_TYPES
 from lightwood.helpers.device import get_devices
 from lightwood.encoders.encoder_base import BaseEncoder
@@ -46,6 +49,8 @@ from transformers import (
 
 # Type-hinting
 from typing import List, Dict
+
+from copy import deepcopy as dc
 
 
 class MLMEncoder(BaseEncoder):
@@ -119,9 +124,7 @@ class MLMEncoder(BaseEncoder):
             self.device
         )
 
-        self._tokenizer = self._tokenizer_class.from_pretrained(self.model_name).to(
-            self.device
-        )
+        self._tokenizer = self._tokenizer_class.from_pretrained(self.model_name)
 
         # Trains to a single target
         if training_data["targets"][0]["output_type"] == COLUMN_DATA_TYPES.CATEGORICAL:
@@ -141,36 +144,40 @@ class MLMEncoder(BaseEncoder):
         )  # Nbatch x N_classes
 
         N_classes = len(set(training_data["targets"][0]["unencoded_output"]))
-        self._labeldict, self._tokenizer = create_label_tokens(
-            N_classes, self._tokenizer
+
+        # This commands adds new tokens to tokenizer, model
+        self._labeldict, self._tokenizer, self._model = create_label_tokens(
+            N_classes, self._tokenizer, self._model
         )
 
-        # Tokenize the dataset
+        # Tokenize the dataset and add the score labels
         text = self._tokenizer(
             priming_data, truncation=True, padding=True, add_special_tokens=True
         )
+        text["score"] = labels
 
+        xinp = MaskedText(text, self._tokenizer.mask_token_id, self._labeldict)
         # Construct a dataset class and data loader
         traindata = DataLoader(
-            MaskedText(text, self._tokenizer.mask_token_id, self._labeldict),
+            xinp,
             batch_size=self._batch_size,
             shuffle=True,
         )
 
         # --------------------------
-        # PSetup the training parameters
+        # Setup the training parameters
         # -------------------------
         log.info("Training the model")
         optimizer = AdamW(self._model.parameters(), lr=self._lr)
         scheduler = get_linear_schedule_with_warmup(
             optimizer,
             num_warmup_steps=0,
-            #    num_training_steps=len(dataset) * self._epochs,
+            num_training_steps=len(traindata) * self._epochs,
         )
 
-        # --------------------------
-        # Train the model
-        # -------------------------
+        ## --------------------------
+        ## Train the model
+        ## -------------------------
         self._train_model(
             traindata, optim=optimizer, scheduler=scheduler, n_epochs=self._epochs
         )
@@ -178,8 +185,65 @@ class MLMEncoder(BaseEncoder):
         log.info("Text encoder is prepared!")
         self._prepared = True
 
+
+    def encode(self, column_data):
+        """
+        Encoder; takes a series of text and encodes it
+        via the text representation.
+
+        The current implementation first asks the model to predict a value, then returns the [CLS] token of the sentence with the predicted value token in the stead.
+        """
+        if self._prepared is False:
+            raise Exception("You need to first prepare the encoder.")
+
+        encoded_representation = []
+
+        # Set model to testing/eval mode.
+        self._model.eval()
+
+        with torch.no_grad():
+            for text in column_data:
+
+                # Omit NaNs
+                if text is None:
+                    text = ""
+
+                # Tokenize the text with the built-in tokenizer.
+                inp = self._tokenizer.encode(
+                    text, truncation=True, return_tensors="pt"
+                ).to(self.device)
+
+                output = self._get_embedding(inp)
+                encoded_representation.append(output.detach())
+
+        return torch.stack(encoded_representation).squeeze(1)
+
     def decode(self, encoded_values_tensor, max_length=100):
+        """
+        Decoder from latent space -> original output.
+        This can be used for text generation if decoded space is tokenized.
+        """
         raise Exception("Decoder not implemented.")
+
+    def _get_embedding(self, inp):
+        """
+        Get the [CLS] token representation after predicting
+        the model outcome.
+        """
+        mask_index = torch.where(inp[0] == self._tokenizer.mask_token_id)
+
+
+        logits = self._model(inp).logits
+        softmax = F.softmax(logits, dim=-1)
+        mask_word = softmax[0, mask_index, :]
+
+        pred_word = torch.topk(mask_word, 2, dim=1)[1][0]
+
+        output = dc(inp)
+        output[0][mask_index] = pred_word
+
+        return self._model(output)
+
 
     def _train_model(
         self,
