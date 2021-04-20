@@ -292,8 +292,7 @@ class MLMEncoder(BaseEncoder):
         """ Training step details """
         log.info(f"{self.name} at epoch {epoch+1} and loss {loss}!")
 
-
-    def to(self, device):
+    def to(self, device, available_devices):
         for v in vars(self):
             attr = getattr(self, v)
             if isinstance(attr, torch.nn.Module):
