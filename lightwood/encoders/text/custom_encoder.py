@@ -177,9 +177,9 @@ class MLMEncoder(BaseEncoder):
         # --------------------------
         # Train the model
         # -------------------------
-        self._train_model(
-            traindata, optim=optimizer, scheduler=scheduler, n_epochs=self._epochs
-        )
+        #self._train_model(
+        #    traindata, optim=optimizer, scheduler=scheduler, n_epochs=self._epochs
+        #)
 
         log.info("MLM text encoder is prepared!")
         self._prepared = True
@@ -291,3 +291,11 @@ class MLMEncoder(BaseEncoder):
     def _train_callback(self, epoch, loss):
         """ Training step details """
         log.info(f"{self.name} at epoch {epoch+1} and loss {loss}!")
+
+
+    def to(self, device):
+        for v in vars(self):
+            attr = getattr(self, v)
+            if isinstance(attr, torch.nn.Module):
+                attr.to(device)
+        return self
