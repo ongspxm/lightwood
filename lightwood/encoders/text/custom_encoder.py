@@ -139,10 +139,10 @@ class MLMEncoder(BaseEncoder):
         priming_data = add_mask(priming_data, self._tokenizer._mask_token)
 
         # Get the output labels in the categorical space
-        labels = training_data["targets"][0]["encoded_output"].argmax(
-            dim=1
-        )  # Nbatch x N_classes
-
+        #labels = training_data["targets"][0]["encoded_output"].argmax(
+        #    dim=1
+        #)  # Nbatch x N_classes
+        labels = torch.tensor(training_data["targets"][0]["unencoded_output"])
         N_classes = len(set(training_data["targets"][0]["unencoded_output"]))
 
         # This commands adds new tokens to tokenizer, model
