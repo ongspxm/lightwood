@@ -1,8 +1,6 @@
 """
 2021.03.18
 
-## Padding changes the answer slightly in the model.
-
 The following text encoder uses huggingface's
 Distilbert. Internal benchmarks suggest
 1 epoch of fine tuning is ideal [classification].
