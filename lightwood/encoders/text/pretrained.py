@@ -328,3 +328,10 @@ class PretrainedLang(BaseEncoder):
 
     def decode(self, encoded_values_tensor, max_length=100):
         raise Exception("Decoder not implemented.")
+
+    def to(self, device):
+        for v in vars(self):
+            attr = getattr(self, v)
+            if isinstance(attr, torch.nn.Module):
+                attr.to(device)
+        return self
