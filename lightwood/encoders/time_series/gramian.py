@@ -80,14 +80,28 @@ class GramianTSEncoder(BaseEncoder):
 
 
 if __name__ == '__main__':
+    import pandas as pd
     from pyts.datasets import load_gunpoint
+    from sklearn.metrics import balanced_accuracy_score
+    import mindsdb_native
 
     # X.shape = (50, 150)
-    X, _, _, _ = load_gunpoint(return_X_y=True)
+    X, Xt, Y, Yt = load_gunpoint(return_X_y=True)
 
     encoder = GramianTSEncoder()
     encoder.prepare(X)
 
-    enc = encoder.encode(X)
-    print(enc.shape)
+    enc = encoder.encode(X).cpu().detach().numpy()
 
+    df = pd.DataFrame(enc, columns=[f'a_{i}' for i in range(enc.shape[1])])
+    df['target'] = Y
+
+    p = mindsdb_native.Predictor(name='gramian')
+    p.learn(from_data=df, to_predict='target')
+
+    tenc = encoder.encode(Xt).cpu().detach().numpy()
+    test_df = pd.DataFrame(tenc, columns=[f'a_{i}' for i in range(tenc.shape[1])])
+    test_df['target'] = Yt
+
+    result = p.test(when_data=test_df, accuracy_score_functions=balanced_accuracy_score)
+    print(result)
