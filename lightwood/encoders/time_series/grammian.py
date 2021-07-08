@@ -1,9 +1,10 @@
 import torch
+import numpy as np
 import torch.nn as nn
 from torch.optim import Adam
-import numpy as np
 from pyts.image import GramianAngularField
 
+from lightwood.helpers.device import get_devices
 from lightwood.helpers.torch import LightwoodAutocast
 from lightwood.encoders.encoder_base import BaseEncoder
 
@@ -11,7 +12,8 @@ from lightwood.encoders.encoder_base import BaseEncoder
 class GramianTSEncoder(BaseEncoder):
     def __init__(self, is_target=False, img_size=12):
         super().__init__(is_target)
-        self.img_size = img_size  # TODO: is this the encoded image size?
+        self.device, _ = get_devices()
+        self.img_size = img_size
         self.hidden_dimension = 128
         self.epochs = 200
 
@@ -37,7 +39,6 @@ class GramianTSEncoder(BaseEncoder):
         criterion = torch.nn.MSELoss()
         optimizer = Adam(params=list(self.cnn_enc.parameters())+list(self.cnn_dec.parameters()))
 
-        # using the gramian angular fields, we train a CNN autoencoder pipline to use both GAF methods
         with LightwoodAutocast():
             for epoch in range(self.epochs):
                 running_loss = 0.0
@@ -54,9 +55,7 @@ class GramianTSEncoder(BaseEncoder):
                     running_loss += loss.item()
                     print('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, loss))
                     running_loss = 0.0
-
         self._prepared = True
-        return concatenated
 
     def encode(self, column_data):
         """
@@ -70,12 +69,14 @@ class GramianTSEncoder(BaseEncoder):
         summed = self.SumEnc.transform(column_data).reshape(batch_size, -1)
         diffed = self.DiffEnc.transform(column_data).reshape(batch_size, -1)
         concatenated = torch.Tensor(np.concatenate([summed, diffed], axis=-1))
-        encoded = self.cnn_enc(concatenated)  # @TODO: .to(self.device)
+        encoded = self.cnn_enc(concatenated).to(self.device)
 
         return encoded
 
     def decode(self, data):
         raise NotImplementedError()
+
+
 
 
 if __name__ == '__main__':
