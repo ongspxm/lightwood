@@ -25,6 +25,7 @@ from lightwood.encoders import (
     ShortTextEncoder,
     VocabularyEncoder,
     PretrainedLang,
+    GramianTSEncoder
 )
 
 
@@ -321,6 +322,7 @@ class DataSource(Dataset):
             encoder_class = TsNumericEncoder
         if column_type == ColumnDataTypes.TIME_SERIES and '__mdb_ts_previous' in column_config['name']:
             encoder_class = TimeSeriesPlainEncoder
+            encoder_class = GramianTSEncoder
 
         return encoder_class
 

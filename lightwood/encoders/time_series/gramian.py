@@ -10,7 +10,7 @@ from lightwood.encoders.encoder_base import BaseEncoder
 
 
 class GramianTSEncoder(BaseEncoder):
-    def __init__(self, is_target=False, img_size=12):
+    def __init__(self, is_target=False, img_size=10):  # 12 => img_size should be (window+1)
         super().__init__(is_target)
         self.device, _ = get_devices()
         self.img_size = img_size
@@ -22,15 +22,19 @@ class GramianTSEncoder(BaseEncoder):
 
         self.cnn_enc = nn.Sequential(
             nn.Linear(2*(img_size**2), 2*img_size), nn.ReLU(True),
-            nn.Linear(2*img_size, img_size), nn.ReLU(True))
+            nn.Linear(2*img_size, img_size), nn.ReLU(True)).to(self.device)
 
         self.cnn_dec = nn.Sequential(
             nn.Linear(img_size, 2*img_size), nn.ReLU(True),
-            nn.Linear(2*img_size, 2*(img_size**2)), nn.Tanh())
+            nn.Linear(2*img_size, 2*(img_size**2)), nn.Tanh()).to(self.device)
 
     def prepare(self, priming_data):
         if self._prepared:
             raise Exception('You can only call "prepare" once for a given encoder.')
+
+        if isinstance(priming_data, list):
+            priming_data = np.array(priming_data, dtype=np.float)
+            priming_data = np.nan_to_num(priming_data)
 
         batch_size = priming_data.shape[0]
         summed = self.SumEnc.fit_transform(priming_data).reshape(batch_size, -1)
@@ -44,10 +48,10 @@ class GramianTSEncoder(BaseEncoder):
                 running_loss = 0.0
                 for i in range(0, concatenated.shape[0], batch_size):
                     data = concatenated[i:i+batch_size, :]
-                    inputs = torch.Tensor(data)
-                    labels = torch.Tensor(data)
+                    inputs = torch.Tensor(data).to(self.device)
+                    labels = torch.Tensor(data).to(self.device)
                     optimizer.zero_grad()
-                    outputs = self.cnn_dec(self.cnn_enc(inputs))
+                    outputs = self.cnn_dec(self.cnn_enc(inputs)).to(self.device)
                     loss = criterion(outputs, labels)
                     loss.backward()
                     optimizer.step()
@@ -65,10 +69,14 @@ class GramianTSEncoder(BaseEncoder):
         if not self._prepared:
             raise Exception('You need to call "prepare" before calling "encode" or "decode".')
 
+        if isinstance(column_data, list):
+            column_data = np.array(column_data, dtype=np.float)
+            column_data = np.nan_to_num(column_data)
+
         batch_size = column_data.shape[0]
         summed = self.SumEnc.transform(column_data).reshape(batch_size, -1)
         diffed = self.DiffEnc.transform(column_data).reshape(batch_size, -1)
-        concatenated = torch.Tensor(np.concatenate([summed, diffed], axis=-1))
+        concatenated = torch.Tensor(np.concatenate([summed, diffed], axis=-1)).to(self.device)
         encoded = self.cnn_enc(concatenated).to(self.device)
 
         return encoded

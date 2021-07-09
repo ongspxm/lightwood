@@ -11,6 +11,7 @@ from lightwood.encoders.categorical.onehot import OneHotEncoder
 from lightwood.encoders.categorical.autoencoder import CategoricalAutoEncoder
 from lightwood.encoders.time_series.rnn import TimeSeriesEncoder as TsRnnEncoder
 from lightwood.encoders.time_series.plain import TimeSeriesPlainEncoder
+from lightwood.encoders.time_series.gramian import GramianTSEncoder
 from lightwood.encoders.categorical.multihot import MultiHotEncoder
 from lightwood.encoders.text.pretrained import PretrainedLang
 
@@ -42,6 +43,7 @@ class Categorical:
 class TimeSeries:
     TsRnnEncoder = TsRnnEncoder
     TimeSeriesPlainEncoder = TimeSeriesPlainEncoder
+    GramianTSEncoder = GramianTSEncoder
 
 class BuiltinEncoders:
     DateTime = DateTime
