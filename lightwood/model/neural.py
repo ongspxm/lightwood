@@ -166,7 +166,7 @@ class Neural(BaseModel):
         time_for_trials = self.stop_after / 2
         nr_trails = 25
         time_per_trial = time_for_trials / nr_trails
-        if time_per_trial > 5:
+        if False and time_per_trial > 5:
             def objective(trial):
                 log.debug(f'Running trial in max {time_per_trial} seconds')
                 # For trail options see: https://optuna.readthedocs.io/en/stable/reference/generated/optuna.trial.Trial.html?highlight=suggest_int
