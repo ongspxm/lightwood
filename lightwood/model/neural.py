@@ -243,14 +243,11 @@ class Neural(BaseModel):
     def partial_fit(self, train_data: List[EncodedDs], dev_data: List[EncodedDs]) -> None:
         # Based this on how long the initial training loop took, at a low learning rate as to not mock anything up tooo badly
         train_ds = ConcatedEncodedDs(train_data)
-        dev_ds = ConcatedEncodedDs(dev_data + train_data)
         train_dl = DataLoader(train_ds, batch_size=self.batch_size, shuffle=True)
-        dev_dl = DataLoader(dev_ds, batch_size=self.batch_size, shuffle=True)
         optimizer = self._select_optimizer(self.lr)
         criterion = self._select_criterion()
         scaler = GradScaler()
-
-        self.model, _, _ = self._max_fit(train_dl, dev_dl, criterion, optimizer, scaler, self.stop_after, return_model_after=max(1, int(self.epochs_to_best / 3)))
+        self._run_epoch(train_dl, criterion, optimizer, scaler)
     
     def __call__(self, ds: EncodedDs) -> pd.DataFrame:
         self.model = self.model.eval()
