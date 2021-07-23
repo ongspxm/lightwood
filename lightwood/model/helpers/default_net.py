@@ -4,6 +4,7 @@ from lightwood.helpers.torch import LightwoodAutocast
 from lightwood.helpers.device import get_devices
 from lightwood.helpers.log import log
 import numpy as np
+from functools import reduce
 
 
 class DefaultNet(torch.nn.Module):
@@ -22,15 +23,15 @@ class DefaultNet(torch.nn.Module):
             hidden_size = max([self.input_size * 2, self.output_size * 2, 400])
             shape = [self.input_size] + [hidden_size] * num_hidden + [self.output_size]
             
-            # If the network is too big, shrink it
-            if np.sum([shape[i] * shape[i + 1] for i in range(len(shape) - 1)]) > max_params:
-                log.warning('Shrinking network!')
-                hidden_size = math.floor(max_params / (self.input_size * self.output_size))
+            # BUG (but maybe had a good effect)
+            if reduce(lambda x, y: x*y, shape) > int(3e5):
+                hidden_size = math.floor(max_params/(self.input_size*self.output_size))
 
                 if hidden_size > self.output_size:
                     shape = [self.input_size, hidden_size, self.output_size]
                 else:
                     shape = [self.input_size, self.output_size]
+
         if shape is not None:
             layers = []
             for ind in range(len(shape) - 1):
