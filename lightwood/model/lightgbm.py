@@ -169,6 +169,7 @@ class LightGBM(BaseModel):
             self.partial_fit(dev_ds_arr, train_ds_arr)
 
     def partial_fit(self, train_data: List[EncodedDs], dev_data: List[EncodedDs]) -> None:
+        return
         ds = ConcatedEncodedDs(train_data)
         pct_of_original = len(ds) / self.fit_data_len
         iterations = max(1, int(self.num_iterations * pct_of_original)/2)

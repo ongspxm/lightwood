@@ -166,7 +166,7 @@ class Neural(BaseModel):
         time_for_trials = self.stop_after / 2
         nr_trails = 25
         time_per_trial = time_for_trials / nr_trails
-        if time_per_trial > 5:
+        if False and time_per_trial > 5:
             def objective(trial):
                 log.debug(f'Running trial in max {time_per_trial} seconds')
                 # For trail options see: https://optuna.readthedocs.io/en/stable/reference/generated/optuna.trial.Trial.html?highlight=suggest_int
@@ -243,6 +243,13 @@ class Neural(BaseModel):
     def partial_fit(self, train_data: List[EncodedDs], dev_data: List[EncodedDs]) -> None:
         # Based this on how long the initial training loop took, at a low learning rate as to not mock anything up tooo badly
         train_ds = ConcatedEncodedDs(train_data)
+        train_dl = DataLoader(train_ds, batch_size=self.batch_size, shuffle=True)
+        optimizer = self._select_optimizer(self.lr)
+        criterion = self._select_criterion()
+        scaler = GradScaler()
+        self._run_epoch(train_dl, criterion, optimizer, scaler)
+        '''
+        train_ds = ConcatedEncodedDs(train_data)
         dev_ds = ConcatedEncodedDs(dev_data + train_data)
         train_dl = DataLoader(train_ds, batch_size=self.batch_size, shuffle=True)
         dev_dl = DataLoader(dev_ds, batch_size=self.batch_size, shuffle=True)
@@ -251,7 +258,8 @@ class Neural(BaseModel):
         scaler = GradScaler()
 
         self.model, _, _ = self._max_fit(train_dl, dev_dl, criterion, optimizer, scaler, self.stop_after, return_model_after=max(1, int(self.epochs_to_best / 3)))
-    
+        '''
+
     def __call__(self, ds: EncodedDs) -> pd.DataFrame:
         self.model = self.model.eval()
         decoded_predictions: List[object] = []
