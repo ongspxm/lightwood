@@ -241,6 +241,7 @@ class Neural(BaseModel):
         self._final_tuning(dev_ds_arr)
 
     def partial_fit(self, train_data: List[EncodedDs], dev_data: List[EncodedDs]) -> None:
+        return
         # Based this on how long the initial training loop took, at a low learning rate as to not mock anything up tooo badly
         train_ds = ConcatedEncodedDs(train_data)
         dev_ds = ConcatedEncodedDs(dev_data + train_data)
