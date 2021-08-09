@@ -10,6 +10,7 @@ trainable_encoders = ('PretrainedLangEncoder', 'CategoricalAutoEncoder', 'TimeSe
 ts_encoders = ('TimeSeriesEncoder', 'TimeSeriesPlainEncoder', 'TsNumericEncoder')
 
 
+
 def lookup_encoder(col_dtype: str, col_name: str, is_target: bool, problem_defintion: ProblemDefinition, is_target_predicting_encoder: bool):
     tss = problem_defintion.timeseries_settings
     encoder_lookup = {
