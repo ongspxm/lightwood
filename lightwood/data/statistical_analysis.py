@@ -31,7 +31,7 @@ def get_numeric_histogram(data, data_dtype):
 
 def compute_entropy_biased_buckets(histogram):
     S, biased_buckets = None, None
-    if histogram is not None or len(histogram['x']) == 0:
+    if histogram is not None:
         hist_x = histogram['x']
         hist_y = histogram['y']
         nr_values = sum(hist_y)
@@ -83,19 +83,16 @@ def statistical_analysis(data: pd.DataFrame,
     for col in df.columns:
         histograms[col] = None
         buckets[col] = None
-        if dtypes[col] in (dtype.categorical, dtype.binary, dtype.date):
+        if dtypes[col] in (dtype.categorical, dtype.binary):
             hist = dict(df[col].value_counts().apply(lambda x: x / len(df[col])))
             histograms[col] = {
-                'x': list([str(x) for x in hist.keys()]),
+                'x': list(hist.keys()),
                 'y': list(hist.values())
             }
             buckets[col] = histograms[col]['x']
-        elif dtypes[col] in (dtype.integer, dtype.float, dtype.array):
+        if dtypes[col] in (dtype.integer, dtype.float, dtype.array):
             histograms[col] = get_numeric_histogram(filter_nan(df[col]), dtypes[col])
             buckets[col] = histograms[col]['x']
-        else:
-            histograms[col] = {'x': [], 'y': []}
-            buckets[col] = []
 
     # get observed classes, used in analysis
     target_class_distribution = None

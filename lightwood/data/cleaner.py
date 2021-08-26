@@ -12,7 +12,7 @@ import pandas as pd
 
 def _to_datetime(element):
     try:
-        date = parse_dt(str(element))
+        date = parse_dt(element)
     except Exception:
         try:
             date = datetime.datetime.utcfromtimestamp(element)
