@@ -18,7 +18,7 @@ from lightwood.encoder.categorical.multihot import MultiHotEncoder
 from lightwood.encoder.text.pretrained import PretrainedLangEncoder
 from lightwood.encoder.type_encoder_maps import (Array, Binary, Categorical, Date, Datetime, Float, Image, Integer,
                                                  Quantity, Rich_Text, Short_Text, Tags)
-
+from lightwood.encoder.text.custom_encoder import MLMEncoder
 
 # Encoders that depend on optiona dependencies
 try:
@@ -33,4 +33,4 @@ __all__ = ['BaseEncoder', 'DatetimeEncoder', 'Img2VecEncoder', 'NumericEncoder',
            'CategoricalAutoEncoder', 'TimeSeriesEncoder', 'TimeSeriesPlainEncoder', 'MultiHotEncoder',
            'PretrainedLangEncoder', 'AmplitudeTsEncoder', 'BinaryEncoder', 'DatetimeNormalizerEncoder',
            'Array', 'Binary', 'Categorical', 'Date', 'Datetime', 'Float', 'Image', 'Integer',
-           'Quantity', 'Rich_Text', 'Short_Text', 'Tags']
+           'Quantity', 'Rich_Text', 'Short_Text', 'Tags', 'MLMEncoder']
