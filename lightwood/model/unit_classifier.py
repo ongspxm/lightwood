@@ -16,9 +16,10 @@ class UnitClassifier(Unit):
         decoded_predictions: List[object] = []
 
         for X, _ in ds:
+            X = torch.unsqueeze(X, 0)
             X[:, 0] = 0.0
             X = F.softmax(X, dim=-1)  # always ignores the unknown token
-            decoded_prediction = self.target_encoder.decode(torch.unsqueeze(X, 0))
+            decoded_prediction = self.target_encoder.decode(X)
             decoded_predictions.extend(decoded_prediction)
 
         ydf = pd.DataFrame({"prediction": decoded_predictions})
