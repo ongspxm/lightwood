@@ -13,6 +13,8 @@ Currently the model explicitly reads "DistilBert".
 Author: Natasha Seelam (natasha@mindsdb.com)
 """
 
+import pandas as pd
+
 # Dataset helpers
 from torch.utils.data import DataLoader
 from lightwood.encoder.text.helpers.mlm_helpers import (
@@ -29,6 +31,7 @@ from lightwood.helpers.device import get_devices
 from lightwood.encoder.base import BaseEncoder
 from lightwood.helpers.log import log
 from lightwood.helpers.torch import LightwoodAutocast
+from lightwood.api import dtype
 
 # text-model helpers
 from transformers import (
@@ -56,6 +59,10 @@ class MLMEncoder(BaseEncoder):
     ::param imax_position_embeddings; max sequence length of input text
     ::param epochs; number of epochs to train model with
     ::param lr; learning-rate for model
+    ::param embed_mode; whether to return the embedding or the class for classification
+    ::param output_type; lightwood api dtype - confirms classification output
+    ::param uses_target; passed information
+    ::param is_nn_encoder; Boolean - training NN encoder
     """
 
     def __init__(
@@ -65,6 +72,10 @@ class MLMEncoder(BaseEncoder):
         max_position_embeddings: int = None,
         epochs: int = 1,
         lr: float = 1e-5,
+        embed_mode: bool = True,
+        output_type=None,
+        uses_target: bool = True,
+        is_nn_encoder: bool = True,
     ):
         super().__init__(is_target)
 
@@ -80,6 +91,14 @@ class MLMEncoder(BaseEncoder):
         # Model setup
         self._model = None
         self.model_type = None
+        self.output_type = output_type
+        self.embed_mode = embed_mode
+
+        # This is important if you want to pass information into the prepare call
+        self.uses_target = True
+        self.is_nn_encoder = True
+        self.output_size = None
+
 
         # Distilbert is a good balance of speed/performance hence chosen.
         self._embeddings_model_class = DistilBertForMaskedLM
@@ -88,7 +107,13 @@ class MLMEncoder(BaseEncoder):
         # Set the device; CUDA v. CPU
         self.device, _ = get_devices()
 
-    def prepare(self, priming_data: List[str], training_data: Dict):
+        # Notify user if embed-mode flagged
+        if self.embed_mode:
+            log.info("Embedding mode on. [CLS] embedding dim output of encode()")
+        else:
+            log.info("Embedding mode off. Logits are output of encode()")
+
+    def prepare(self, priming_data: pd.Series, encoded_target_values: torch.Tensor):
         """
         Prepare the encoder by training on the target.
         Training data must be a dict with "targets" avail.
@@ -97,8 +122,6 @@ class MLMEncoder(BaseEncoder):
         ::param priming_data; list of the input text
         ::param training_data; config of lightwood for encoded outputs etc.
         """
-        #assert (len(training_data["targets"]) == 1, "Only 1 target permitted.")
-
         if self._prepared:
             raise Exception("Encoder is already prepared.")
 
@@ -113,69 +136,86 @@ class MLMEncoder(BaseEncoder):
 
         self._tokenizer = self._tokenizer_class.from_pretrained(self.model_name)
 
-        # Trains to a single target
-        #if training_data["targets"][0]["output_type"] == COLUMN_DATA_TYPES.CATEGORICAL:
-        #    print("CATEGORICAL")
+        if self.output_type in (dtype.categorical, dtype.binary):
+            log.info("Training model.")
+            # --------------------------
+            # Prepare the input data
+            # --------------------------
+            log.info("Preparing the training data")
 
-        # --------------------------
-        # Prepare the input data
-        # --------------------------
-        log.info("Preparing the training data")
+            # Replace any empty strings with a "" placeholder and add MASK tokens.
+            priming_data = add_mask(priming_data, self._tokenizer._mask_token)
 
-        # Replace any empty strings with a "" placeholder and add MASK tokens.
-        priming_data = add_mask(priming_data, self._tokenizer._mask_token)
+            # Get the output labels in the categorical space; originally OHE
+            labels = encoded_target_values.argmax(dim=1)
 
-        # Get the output labels in the categorical space
-        labels = training_data["targets"][0]["encoded_output"].argmax(
-            dim=1
-        )  # Nbatch x N_classes
+            N_classes = len(encoded_target_values[0])
 
-        N_classes = len(set(training_data["targets"][0]["unencoded_output"]))
+            self.output_size = N_classes
 
-        # This commands adds new tokens to tokenizer, model
-        self._labeldict, self._tokenizer, self._model = create_label_tokens(
-            N_classes, self._tokenizer, self._model
-        )
+            # This commands adds new tokens to tokenizer, model
+            self._labeldict, self._tokenizer, self._model = create_label_tokens(
+                N_classes, self._tokenizer, self._model
+            )
 
-        # Tokenize the dataset and add the score labels
-        text = self._tokenizer(
-            priming_data, truncation=True, padding=True, add_special_tokens=True
-        )
-        text["score"] = labels
+            # DEBUG
+            log.info(str(self._labeldict))
 
-        # Construct a dataset class and data loader
-        traindata = DataLoader(
-            MaskedText(text, self._tokenizer.mask_token_id, self._labeldict),
-            batch_size=self._batch_size,
-            shuffle=True,
-        )
+            # Tokenize the dataset and add the score labels
+            text = self._tokenizer(
+                priming_data, truncation=True, padding=True, add_special_tokens=True
+            )
+            text["score"] = labels
 
-        # --------------------------
-        # Setup the training parameters
-        # -------------------------
-        log.info("Training the model")
-        optimizer = AdamW(self._model.parameters(), lr=self._lr)
-        scheduler = get_linear_schedule_with_warmup(
-            optimizer,
-            num_warmup_steps=0,
-            num_training_steps=len(traindata) * self._epochs,
-        )
+            # Construct a dataset class and data loader
+            traindata = DataLoader(
+                MaskedText(text, self._tokenizer.mask_token_id, self._labeldict),
+                batch_size=self._batch_size,
+                shuffle=True,
+            )
 
-        # --------------------------
-        # Train the model
-        # -------------------------
-        #self._train_model(
-        #    traindata, optim=optimizer, scheduler=scheduler, n_epochs=self._epochs
-        #)
+            # --------------------------
+            # Setup the training parameters
+            # -------------------------
+            log.info("Training the model")
+            optimizer = AdamW(self._model.parameters(), lr=self._lr)
+            scheduler = get_linear_schedule_with_warmup(
+                optimizer,
+                num_warmup_steps=0,
+                num_training_steps=len(traindata) * self._epochs,
+            )
+
+            # --------------------------
+            # Train the model
+            # -------------------------
+            self._train_model(
+                traindata, optim=optimizer, scheduler=scheduler, n_epochs=self._epochs
+            )
+        else:
+            log.info("Target is not classification; Embeddings Generator only")
+            self.model_type = "embeddings_generator"
+
+            if self.embed_mode is False:
+                log.info("Embedding mode must be ON for non-classification targets.")
+                self.embed_mode = True
+
+            # Estimate output size
+            encoded = self.encode(priming_data[0:1])
+            self.output_size = len(encoded[0])
 
         log.info("MLM text encoder is prepared!")
         self._prepared = True
+
+
 
     def encode(self, column_data):
         """
         Encoder; takes a series of text and encodes it
         via the text representation.
-        The current implementation first asks the model to predict a value, then returns the [CLS] token of the sentence with the predicted value token in the stead.
+
+        Two modes available:
+        1) Embed mode [True] - return the [CLS] token embedding
+        2) Embed mode [False] - return the class prediction
         """
         if self._prepared is False:
             raise Exception("You need to first prepare the encoder.")
@@ -191,15 +231,22 @@ class MLMEncoder(BaseEncoder):
         with torch.no_grad():
             for text in column_data:
 
-                # Tokenize the text with the built-in tokenizer.
-                inp = self._tokenizer.encode(
-                    text, truncation=True, return_tensors="pt"
-                ).to(self.device)
+                if text is None:
+                    text = ""
 
-                output = self._get_embedding(inp)
+                inp = self._tokenizer.encode(
+                        text, truncation=True, return_tensors="pt"
+                    ).to(self.device)
+
+                if self.embed_mode:  # Embedding mode ON; return [CLS] embedding
+                    # Tokenize the text with the built-in tokenizer.
+                    output = self._model.base_model(inp).last_hidden_state[:, 0]
+                else:  # Return class prediction
+                    output = self._evalclass(inp)
+
                 encoded_representation.append(output.detach())
 
-        return torch.stack(encoded_representation).squeeze(1)
+        return torch.stack(encoded_representation).squeeze(1).to('cpu')
 
     def decode(self, encoded_values_tensor, max_length=100):
         """
@@ -208,27 +255,22 @@ class MLMEncoder(BaseEncoder):
         """
         raise Exception("Decoder not implemented.")
 
-    def _get_embedding(self, inp):
+    def _evalclass(self, example):
         """
-        Get the [CLS] token representation after predicting
-        the model outcome.
-        This currently enables the BEST predicted token to be
-        the [MASK] replacement; a better strategy is to reweigh only
-        the labels predicted.
+        Input the text and output the top guesses
+
+        :param example tokenized input of text (pre-masked)
         """
-        mask_index = torch.where(inp[0] == self._tokenizer.mask_token_id)
+        mask_index = torch.where(example[0] == self._tokenizer.mask_token_id)
 
-        logits = self._model(inp).logits
-        softmax = F.softmax(logits, dim=-1)
-        mask_word = softmax[0, mask_index, :]
+        # Get a softmax over the vocab (# 1 x Ntokens x Nvocab)
+        output = F.softmax(self._model(example).logits, dim=-1)
 
-        pred_word = torch.topk(mask_word, 1, dim=1)[1][0]
+        # Explicitly return on the dimensionality of the labels
+        # Re-weight for only the output labels
+        mask_score = F.softmax(output[0, mask_index, list(self._labeldict.values())], dim=-1)
 
-        # Replace the MASK with the predicted token
-        output = dc(inp)
-        output[0][mask_index] = pred_word
-
-        return self._model.base_model(output).last_hidden_state[:, 0].detach()
+        return mask_score
 
     def _train_model(
         self,

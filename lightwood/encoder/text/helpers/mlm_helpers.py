@@ -4,12 +4,13 @@ Accompanying helper functions for custom_encoder.
 Author: Natasha Seelam (natasha@mindsdb.com)
 """
 import torch
+import pandas as pd
 from typing import List, Dict
 from transformers.tokenization_utils_base import BatchEncoding
 from transformers import DistilBertTokenizerFast, DistilBertForMaskedLM
 
 
-def add_mask(priming_data: List[str], mask: str = "[MASK]"):
+def add_mask(priming_data: pd.Series, mask: str = "[MASK]"):
     """
     Given a list of strings, adds a 'MASK' token
     to the beginning for the masked language model (MLM) to train.
@@ -32,6 +33,11 @@ def create_label_tokens(
     Args:
     ::param n_labels; number of labels
     ::param tokenizer; text tokenizer
+
+    Returns:
+    - a dictionary that maps {label: tokenID}
+    - an updated tokenizer
+    - an updated model to handle more tokens in embedding.
     """
     labels = {"[C" + str(i) + "]": i for i in range(1, n_labels+1)}
 
@@ -90,3 +96,28 @@ class MaskedText(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.encodings["input_ids"])
+
+
+#def evalclass(example,
+#              model,
+#              mask_token_id, #=tokenizer.mask_token_id,
+#              label_dict): #=ilabel_dict):
+#    """
+#    Input the text and output the top guesses
+#    
+#    :param example
+#    :param model - torch model; MLM model
+#    :param mask_token_id - int; token corresponding to MASK
+#    :param label_dict - dict; Labels to token Ids
+#    """ 
+#    inpids = example["input_ids"].unsqueeze(0)
+#    attn = example["attention_mask"].unsqueeze(0)
+#    score = example["score"].item()
+#    mask_index = torch.where(inpids[0] == mask_token_id)
+#
+#    output = F.softmax(model(inpids, attention_mask=attn).logits) # 1 x Ntokens x Nvocab
+#
+#    # Explicitly return on the dimensionality of the labels
+#    mask_score = softmax[0, mask_index, list(label_dict.values())]
+#
+#    return mask_score
