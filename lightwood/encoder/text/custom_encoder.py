@@ -158,9 +158,6 @@ class MLMEncoder(BaseEncoder):
                 N_classes, self._tokenizer, self._model
             )
 
-            # DEBUG
-            log.info(str(self._labeldict))
-
             # Tokenize the dataset and add the score labels
             text = self._tokenizer(
                 priming_data, truncation=True, padding=True, add_special_tokens=True
