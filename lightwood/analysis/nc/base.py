@@ -1,13 +1,15 @@
 # Original author: Henrik Linusson (github.com/donlnz)
-
 import abc
+from typing import Dict
 import numpy as np
-
 from sklearn.base import BaseEstimator
 
 
+from lightwood.analysis.nc.util import t_softmax
+
+
 class RegressorMixin(object):
-    def __init__(self):
+    def __init__(self) -> None:
         super(RegressorMixin, self).__init__()
 
     @classmethod
@@ -16,18 +18,18 @@ class RegressorMixin(object):
 
 
 class ClassifierMixin(object):
-    def __init__(self):
+    def __init__(self) -> None:
         super(ClassifierMixin, self).__init__()
 
     @classmethod
-    def get_problem_type(cls):
+    def get_problem_type(cls) -> str:
         return 'classification'
 
 
 class BaseModelAdapter(BaseEstimator):
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, model, fit_params=None):
+    def __init__(self, model: object, fit_params: Dict[str, object] = None) -> None:
         super(BaseModelAdapter, self).__init__()
 
         self.model = model
@@ -35,7 +37,7 @@ class BaseModelAdapter(BaseEstimator):
         self.clean = False
         self.fit_params = {} if fit_params is None else fit_params
 
-    def fit(self, x, y):
+    def fit(self, x: np.array, y: np.array) -> None:
         """Fits the model.
 
         Parameters
@@ -54,7 +56,7 @@ class BaseModelAdapter(BaseEstimator):
         self.model.fit(x, y, **self.fit_params)
         self.clean = False
 
-    def predict(self, x):
+    def predict(self, x: np.array) -> np.array:
         """Returns the prediction made by the underlying model.
 
         Parameters
@@ -80,7 +82,7 @@ class BaseModelAdapter(BaseEstimator):
         return self.last_y.copy()
 
     @abc.abstractmethod
-    def _underlying_predict(self, x):
+    def _underlying_predict(self, x: np.array) -> np.array:
         """Produces a prediction using the encapsulated model.
 
         Parameters
@@ -97,16 +99,48 @@ class BaseModelAdapter(BaseEstimator):
 
 
 class ClassifierAdapter(BaseModelAdapter):
-    def __init__(self, model, fit_params=None):
+    def __init__(self, model: object, fit_params: Dict[str, object] = None) -> None:
         super(ClassifierAdapter, self).__init__(model, fit_params)
 
-    def _underlying_predict(self, x):
+    def _underlying_predict(self, x: np.array) -> np.array:
         return self.model.predict_proba(x)
 
 
 class RegressorAdapter(BaseModelAdapter):
-    def __init__(self, model, fit_params=None):
+    def __init__(self, model: object, fit_params: Dict[str, object] = None) -> None:
         super(RegressorAdapter, self).__init__(model, fit_params)
 
-    def _underlying_predict(self, x):
+    def _underlying_predict(self, x: np.array) -> np.array:
         return self.model.predict(x)
+
+
+class CachedRegressorAdapter(RegressorAdapter):
+    def __init__(self, model, fit_params=None):
+        super(CachedRegressorAdapter, self).__init__(model, fit_params)
+        self.prediction_cache = None
+
+    def fit(self, x=None, y=None):
+        """ At this point, the predictor has already been trained, but this
+        has to be called to setup some things in the nonconformist backend """
+        pass
+
+    def predict(self, x=None):
+        """ Same as in .fit()
+        :return: np.array (n_test, n_classes) with class probability estimates """
+        return self.prediction_cache
+
+
+class CachedClassifierAdapter(ClassifierAdapter):
+    def __init__(self, model, fit_params=None):
+        super(CachedClassifierAdapter, self).__init__(model, fit_params)
+        self.prediction_cache = None
+
+    def fit(self, x=None, y=None):
+        """ At this point, the predictor has already been trained, but this
+        has to be called to setup some things in the nonconformist backend """
+        pass
+
+    def predict(self, x=None):
+        """ Same as in .fit()
+        :return: np.array (n_test, n_classes) with class probability estimates """
+        return t_softmax(self.prediction_cache, t=0.5)

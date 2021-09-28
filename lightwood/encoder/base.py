@@ -10,7 +10,7 @@ class BaseEncoder:
     def __init__(self, is_target=False) -> None:
         self.is_target = is_target
         self._prepared = False
-        self.uses_folds = False
+        self.uses_subsets = False
         self.is_nn_encoder = False
         self.dependencies = []
         self.output_size = None
@@ -25,7 +25,7 @@ class BaseEncoder:
     def decode(self, encoded_data) -> List[object]:
         raise NotImplementedError
 
-    # Should work for all troch-based encoders, but custom behavior may have to be implemented for very weird models
+    # Should work for all torch-based encoders, but custom behavior may have to be implemented for weird models
     def to(self, device, available_devices):
         # Find all nn.Module type objects and convert them
         # @TODO: Make this work recursively
