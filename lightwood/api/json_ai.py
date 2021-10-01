@@ -536,7 +536,7 @@ def add_implicit_values(json_ai: JsonAI) -> JsonAI:
              {
                  'module': 'GlobalFeatureImportance',
                  'args': {
-                     "disable_column_importance": "False",
+                     "disable_column_importance": "False" if len(json_ai.features) < 30 else "True",
                  },
              },
          ]), ('timeseries_transformer', {
