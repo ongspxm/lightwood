@@ -37,7 +37,7 @@ def timeseries_analyzer(data: pd.DataFrame, dtype_dict: Dict[str, str],
             'tss': timeseries_settings,
             'group_combinations': new_data['group_combinations'],
             'ts_naive_residuals': naive_forecast_residuals,
-            'ts_naive_mae': scale_factor
+            # 'ts_naive_mae': scale_factor
             }
 
 
