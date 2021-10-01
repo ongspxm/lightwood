@@ -12,7 +12,7 @@ def splitter(data: pd.DataFrame, k: int, tss: TimeseriesSettings, seed: int) -> 
     """
     if not tss.is_timeseries:
         # shuffle
-        data = data.sample(frac=1, random_state=seed).reset_index(drop=True)
+        data = data.sample(frac=1, random_state=None).reset_index(drop=True)
 
         # split
         subsets = np.array_split(data, k)
