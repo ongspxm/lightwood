@@ -55,10 +55,13 @@ def splitter(
     max_len = np.max([len(subset) for subset in subsets])
     for subset in subsets:
         if len(subset) < max_len - 2:
-            subset_lengths = [len(subset) for subset in subsets]
-            log.warning(f'Cannot stratify, got subsets of length: {subset_lengths} | Will use random split')
-            subsets = np.array_split(data, nr_subsets)
-            break
+            raise Exception("Stratification aborted")
+            # subset_lengths = [len(subset) for subset in subsets]
+            # log.warning(f'Cannot stratify, got subsets of length: {subset_lengths} | Will use random split')
+            # subsets = np.array_split(data, nr_subsets)
+            # break
+
+    raise Exception("Stratification OK")
 
     train = pd.concat(subsets[0:int(pct_train / gcd)])
     dev = pd.concat(subsets[int(pct_train / gcd):int(pct_train / gcd + pct_dev / gcd)])
