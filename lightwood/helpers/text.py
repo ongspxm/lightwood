@@ -11,6 +11,7 @@
 from collections import Counter, defaultdict
 import string
 import json
+import re
 import hashlib
 import numpy as np
 import scipy.stats as st
@@ -245,15 +246,6 @@ def get_identifier_description(data, column_name, data_dtype):
         return 'Unknown identifier'
 
     return None
-
-
-import re
-
-
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt')
 
 
 def contains_alnum(text):
